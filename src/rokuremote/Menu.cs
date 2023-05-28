@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
 using RokuDeviceLib;
+using System.Text.RegularExpressions;
 
 namespace RokuRemote
 {
@@ -62,11 +63,12 @@ namespace RokuRemote
             Console.WriteLine("4. Power On");
             Console.WriteLine("5. Power Off");
             Console.WriteLine("6. Switch to Nintendo Switch");
-            Console.WriteLine("7. Select Another Device");
+            Console.WriteLine("7. Open YouTube link");
+            Console.WriteLine("8. Select Another Device");
 
             string entry = Console.ReadLine();
             int menuId;
-            var options = 7;
+            var options = 8;
 
             while (!int.TryParse(entry, out menuId) || (menuId == 0 || menuId > options))
             {
@@ -114,10 +116,46 @@ namespace RokuRemote
                     await RokuClient.LaunchApp(selectedDevice.Endpoint, "tvinput.hdmi2");
                     break;
                 case 7:
+                    {
+                        Console.WriteLine("Provide Youtube URL or id: [Rick Astley if nothing]");
+                        string id = Console.ReadLine();
+                        if (string.IsNullOrWhiteSpace(id))
+                        {
+                            id = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+                        }
+                        await LaunchYoutube(selectedDevice, id);
+                        break;
+                    }
+                case 8:
                     return 1;
             }
 
             return result;
+        }
+
+        private static async Task LaunchYoutube(RokuDevice device, string movieId)
+        {
+            string id = GetFirstGroup(@"(^[a-zA-Z0-9]$)", movieId) ?? GetFirstGroup(@"v=([^&]+)", movieId);
+            if (id == null || id.Contains('&') || id.Contains('%') || id.Contains('/'))
+                throw new Exception($"Bad movie id: {movieId}");
+
+            Console.WriteLine($"Launching YT contentID = {id}");
+
+            await RokuClient.LaunchApp(device.Endpoint, "837", id);
+        }
+
+        private static string GetFirstGroup(string pattern, string input)
+        {
+            Match match = Regex.Match(input, pattern);
+
+            if (match.Success)
+            {
+                return match.Groups[1].Value;
+            }
+            else
+            {
+                return null;
+            }
         }
 
         public static async Task RequestAppSelection(string endpoint, IEnumerable<RokuApp> apps)

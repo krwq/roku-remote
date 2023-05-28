@@ -176,12 +176,17 @@ namespace RokuDeviceLib
         }
 
         //Launch an app with the app id returned from the app listing
-        public static async Task LaunchApp(string endpoint, string id)
+        public static async Task LaunchApp(string endpoint, string id, string contentId = null)
         {
             var client = new HttpClient();
-            var requestUrl = string.Format(endpoint + "launch/{0}", id);
-            var result = await client.PostAsync(requestUrl, null);
+            var requestUrl = $"{endpoint}launch/{id}";
 
+            if (contentId != null)
+            {
+                requestUrl += $"?contentId={contentId}";
+            }
+
+            var result = await client.PostAsync(requestUrl, null);
         }
 
         //Emulate the roku remote by sending a key command
