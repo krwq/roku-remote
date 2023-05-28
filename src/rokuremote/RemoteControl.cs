@@ -15,7 +15,7 @@ namespace RokuRemote
             Console.WriteLine("Rev => ,");
             Console.WriteLine("Play => p");
             Console.WriteLine("Select => s");
-            Console.WriteLine("Left => l"); 
+            Console.WriteLine("Left => l");
             Console.WriteLine("Right => r");
             Console.WriteLine("Down => d");
             Console.WriteLine("Up => u");
@@ -29,67 +29,67 @@ namespace RokuRemote
             var k = Console.ReadKey(true);
             do
             {
-                
-                if(k.Key == ConsoleKey.H)
-                {  
-                    await RokuClient.PressKey(endpoint,"Home");
+
+                if (k.Key == ConsoleKey.H)
+                {
+                    await RokuClient.PressKey(endpoint, "Home");
                 }
-                else if(k.Key == ConsoleKey.E)
+                else if (k.Key == ConsoleKey.E)
                 {
-                    await RokuClient.PressKey(endpoint,"Enter");
+                    await RokuClient.PressKey(endpoint, "Enter");
                 }
-                else if(k.Key == ConsoleKey.OemPeriod)
+                else if (k.Key == ConsoleKey.OemPeriod)
                 {
-                    await RokuClient.PressKey(endpoint,"Fwd");
+                    await RokuClient.PressKey(endpoint, "Fwd");
                 }
-                else if(k.Key == ConsoleKey.OemComma)
+                else if (k.Key == ConsoleKey.OemComma)
                 {
-                    await RokuClient.PressKey(endpoint,"Rev");
+                    await RokuClient.PressKey(endpoint, "Rev");
                 }
-                else if(k.Key == ConsoleKey.P)
+                else if (k.Key == ConsoleKey.P)
                 {
-                    await RokuClient.PressKey(endpoint,"Play");
+                    await RokuClient.PressKey(endpoint, "Play");
                 }
-                else if(k.Key == ConsoleKey.S)
+                else if (k.Key == ConsoleKey.S)
                 {
-                    await RokuClient.PressKey(endpoint,"Select");
+                    await RokuClient.PressKey(endpoint, "Select");
                 }
-                else if(k.Key == ConsoleKey.L)
+                else if (k.Key == ConsoleKey.L)
                 {
-                    await RokuClient.PressKey(endpoint,"Left");
+                    await RokuClient.PressKey(endpoint, "Left");
                 }
-                else if(k.Key == ConsoleKey.U)
+                else if (k.Key == ConsoleKey.U)
                 {
-                    await RokuClient.PressKey(endpoint,"Up");
+                    await RokuClient.PressKey(endpoint, "Up");
                 }
-                else if(k.Key == ConsoleKey.R)
+                else if (k.Key == ConsoleKey.R)
                 {
-                    await RokuClient.PressKey(endpoint,"Right");
+                    await RokuClient.PressKey(endpoint, "Right");
                 }
-                else if(k.Key == ConsoleKey.D)
+                else if (k.Key == ConsoleKey.D)
                 {
-                    await RokuClient.PressKey(endpoint,"Down");
+                    await RokuClient.PressKey(endpoint, "Down");
                 }
-                else if(k.Key == ConsoleKey.B)
+                else if (k.Key == ConsoleKey.B)
                 {
-                    await RokuClient.PressKey(endpoint,"Back");
-                } 
-                else if(k.Key == ConsoleKey.X)
-                {
-                    await RokuClient.PressKey(endpoint,"InstantReplay");
+                    await RokuClient.PressKey(endpoint, "Back");
                 }
-                else if(k.Key == ConsoleKey.I)
+                else if (k.Key == ConsoleKey.X)
                 {
-                    await RokuClient.PressKey(endpoint,"Info");
+                    await RokuClient.PressKey(endpoint, "InstantReplay");
                 }
-                else if(k.Key == ConsoleKey.K)
+                else if (k.Key == ConsoleKey.I)
                 {
-                    await RokuClient.PressKey(endpoint,"Backspace");
+                    await RokuClient.PressKey(endpoint, "Info");
                 }
-                else if(k.Key == ConsoleKey.F)
+                else if (k.Key == ConsoleKey.K)
                 {
-                    await RokuClient.PressKey(endpoint,"Search");
-                }               
+                    await RokuClient.PressKey(endpoint, "Backspace");
+                }
+                else if (k.Key == ConsoleKey.F)
+                {
+                    await RokuClient.PressKey(endpoint, "Search");
+                }
                 k = Console.ReadKey(true);
             }
             while (k.Key != ConsoleKey.Q);

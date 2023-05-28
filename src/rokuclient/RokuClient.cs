@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Xml.Serialization;
+using System.Text.Json;
+using System.IO;
 
 namespace RokuDeviceLib
 {
@@ -24,13 +26,13 @@ namespace RokuDeviceLib
         public static async Task<RokuDevice[]> Discover(string ip = "239.255.255.250", int port = 1900, int waitSeconds = 15)
         {
             var token = new CancellationTokenSource();
-            
-            var ucs = new UdpClient();
-        
-            var mcEndpoint = new IPEndPoint(IPAddress.Parse(ip),port);
 
-            var data = string.Format(DISCOVER_MESSAGGE,ip,port);
-            
+            var ucs = new UdpClient();
+
+            var mcEndpoint = new IPEndPoint(IPAddress.Parse(ip), port);
+
+            var data = string.Format(DISCOVER_MESSAGGE, ip, port);
+
             var discoverBytes = Encoding.UTF8.GetBytes(data);
 
             var startTime = DateTime.Now;
@@ -39,39 +41,43 @@ namespace RokuDeviceLib
             token.CancelAfter(TimeSpan.FromSeconds(waitSeconds));
             var deviceQueries = new List<Task<RokuDevice>>();
 
-            using(var udp = new UdpClient())
+            RokuDevice lastDevice = GetLastSelected();
+            if (lastDevice != null)
             {
-                await ucs.SendAsync(discoverBytes, discoverBytes.Length,mcEndpoint);
+                deviceQueries.Add(Task.FromResult(lastDevice));
+            }
+
+            using (var udp = new UdpClient())
+            {
+                await ucs.SendAsync(discoverBytes, discoverBytes.Length, mcEndpoint);
 
                 while (!token.IsCancellationRequested)
                 {
                     var operation = ucs.ReceiveAsync();
-                
+
                     try
                     {
                         operation.Wait(token.Token); //Wait for result until cancelled
                     }
-                    catch(Exception ex)
-                    {   
+                    catch (Exception ex)
+                    {
                         //We either have no devices or we didn't get any additional devices
                         //Not sure where to log this but can't display to user
                     }
 
-                    if(operation.IsCompleted && !operation.IsFaulted)
-                    {  
+                    if (operation.IsCompleted && !operation.IsFaulted)
+                    {
                         result = operation.Result;
                         DeviceResponse = Encoding.ASCII.GetString(result.Buffer);
-                    
-                        var match = Regex.Match(DeviceResponse,LOCATION_PATTERN,RegexOptions.IgnoreCase);
-                        if(match.Success && DeviceResponse.ToLower().Contains("roku"))
+
+                        var match = Regex.Match(DeviceResponse, LOCATION_PATTERN, RegexOptions.IgnoreCase);
+                        if (match.Success && DeviceResponse.ToLower().Contains("roku"))
                         {
                             var address = match.Groups["address"].Value;
                             //Don't allow device info request to hold up discovering additional devices
                             var deviceQuery = ReadDevice(address);
-                            
+
                             deviceQueries.Add(deviceQuery);
-                            
-                            
                         }
                     }
                 }
@@ -84,8 +90,50 @@ namespace RokuDeviceLib
             return devices;
         }
 
+        private static RokuDevice s_lastSelected = null;
+        private const string LAST_SELECTED_FILE = "lastSelected.json";
 
+        private static RokuDevice GetLastSelected()
+        {
+            return s_lastSelected ??= ReadLastSelected();
+        }
 
+        private static RokuDevice ReadLastSelected()
+        {
+            try
+            {
+                return JsonSerializer.Deserialize<RokuDevice>(File.ReadAllText(LAST_SELECTED_FILE));
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public static void WriteLastSelected(RokuDevice device)
+        {
+            try
+            {
+                const string LastSelectedLabel = "[LAST SELECTED]";
+                if (!device.ModelName.Contains(LastSelectedLabel))
+                {
+                    RokuDevice dev = new RokuDevice()
+                    {
+                        ModelName = device.ModelName + " [LAST SELECTED]",
+                        SerialNumber = device.SerialNumber,
+                        Endpoint = device.Endpoint,
+                    };
+
+                    device = dev;
+                }
+
+                File.WriteAllText(LAST_SELECTED_FILE, JsonSerializer.Serialize(device));
+            }
+            catch
+            {
+                Console.WriteLine("Something went wrong went saving last selected.");
+            }
+        }
 
         //Get additional device info
         public static async Task<RokuDevice> ReadDevice(string endpoint)
@@ -107,7 +155,7 @@ namespace RokuDeviceLib
             var client = new HttpClient();
             var requestUrl = endpoint + "query/apps";
             var result = await client.GetStreamAsync(requestUrl);
-         
+
             var serializer = new XmlSerializer(typeof(DeviceAppWrapper));
             var wrapper = (DeviceAppWrapper)serializer.Deserialize(result);
 
@@ -120,7 +168,7 @@ namespace RokuDeviceLib
             var client = new HttpClient();
             var requestUrl = endpoint + "query/active-app";
             var result = await client.GetStreamAsync(requestUrl);
-         
+
             var serializer = new XmlSerializer(typeof(RokuActiveApp));
             var activeApp = (RokuActiveApp)serializer.Deserialize(result);
 
@@ -128,24 +176,27 @@ namespace RokuDeviceLib
         }
 
         //Launch an app with the app id returned from the app listing
-        public static async Task LaunchApp(string endpoint,string id)
+        public static async Task LaunchApp(string endpoint, string id)
         {
             var client = new HttpClient();
-            var requestUrl = string.Format(endpoint + "launch/{0}",id);
-            var result = await client.PostAsync(requestUrl,null);
+            var requestUrl = string.Format(endpoint + "launch/{0}", id);
+            var result = await client.PostAsync(requestUrl, null);
 
         }
 
-       //Emulate the roku remote by sending a key command
-       //Reference here: https://sdkdocs.roku.com/display/sdkdoc/External+Control+Guide#ExternalControlGuide-KeypressKeyValues
-       public static async Task PressKey(string endpoint,string key)
+        //Emulate the roku remote by sending a key command
+        //Reference here: https://sdkdocs.roku.com/display/sdkdoc/External+Control+Guide#ExternalControlGuide-KeypressKeyValues
+        public static async Task PressKey(string endpoint, string key)
         {
             var client = new HttpClient();
-            var requestUrl = string.Format(endpoint + "keypress/{0}",key);
-            var result = await client.PostAsync(requestUrl,null);
-
+            var requestUrl = string.Format(endpoint + "keypress/{0}", key);
+            var result = await client.PostAsync(requestUrl, null);
         }
 
-        
+        public static Task PowerOff(string endpoint)
+            => PressKey(endpoint, "PowerOff");
+
+        public static Task PowerOn(string endpoint)
+            => PressKey(endpoint, "PowerOn");
     }
 }
